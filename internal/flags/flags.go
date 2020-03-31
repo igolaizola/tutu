@@ -47,12 +47,13 @@ Stream options:
     -r, --remote <host[:port]|url> Specify remote address and port or url to use   
     -s, --source <host:port>       Specify source address and port to use
     -k, --insecure                 Skip certificate validations 
-    -h  --header <header:value>    Custom http headers
+	-h, --header <header:value>    Custom http headers
+        --method                   HTTP method (http)
         --proto                    Custom protocol (ws)
         --sub                      Topic to subscribe (mqtt)
         --pub                      Topic to publish (mqtt)
         --dtls server|client       Apply DTLS layer (server/client)
-        --dtls-state               Use serialized state of a previous dtls connection
+		--dtls-state               Use serialized state of a previous dtls connection
 
 `
 
@@ -228,6 +229,7 @@ func fromFlags(args []string) (*tutu.Config, error) {
 	cfg.Header = make(http.Header)
 	headerVal := &headerValue{header: cfg.Header}
 	fs.customVar(headerVal, "header", "h")
+	fs.stringVar(&cfg.Method, "method", "", "GET")
 
 	// Other
 	fs.durationVar(&cfg.Delay, "delay", "d", 0)

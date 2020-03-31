@@ -54,6 +54,7 @@ type Config struct {
 	DTLS      string
 	DTLSState string
 	Header    http.Header
+	Method    string
 	Conn      net.Conn
 }
 
@@ -250,12 +251,40 @@ func newStream(ctx context.Context, logger Logger, cfg *Config) (*stream, error)
 			}
 			_ = inner.Close()
 		}()
-	case "http":
+	case "http_":
 		dialer := rtconn.Dialer{Timeout: timeout}
 		var err error
 		rwc, err = dialer.Dial(ctx, cfg.Remote, cfg.Header)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't dial %s: %w", cfg.Remote, err)
+		}
+	case "http":
+		client := http.Client{
+			Timeout: timeout,
+		}
+		var reader io.Reader
+		writer := io.Writer(noWriter{})
+		if cfg.Method != "GET" {
+			reader, writer = io.Pipe()
+		}
+		req, err := http.NewRequest(cfg.Method, cfg.Remote, reader)
+		if err != nil {
+			return nil, err
+		}
+		req.Header = cfg.Header
+		req = req.WithContext(ctx)
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't dial %s: %w", cfg.Remote, err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("http error %d", resp.StatusCode)
+		}
+		rwc = &contextRWC{
+			reader: resp.Body,
+			writer: writer,
+			//closer: resp.Body,
+			ctx: context.Background(),
 		}
 	case "ws":
 		switch {
@@ -666,6 +695,11 @@ type addr string
 
 func (a addr) Network() string { return string(a) }
 func (addr) String() string    { return "localhost" }
+
+// noWriter is a io.Writer that discards data
+type noWriter struct{}
+
+func (w noWriter) Write(b []byte) (n int, err error) { return len(b), nil }
 
 // dtlsLogger is wrapper of logrus that satisfies logging.LeveledLogger
 type dtlsLogger struct {
