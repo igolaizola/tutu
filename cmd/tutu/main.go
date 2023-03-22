@@ -5,14 +5,15 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 
 	"github.com/igolaizola/tutu"
 	"github.com/igolaizola/tutu/internal/flags"
 )
 
-// Version can provided on build time, ex.: `-ldflags "-X main.Version=v0.0.0"`
-var Version = "v0.0.5"
+// version can provided on build time, ex.: `-ldflags "-X main.version=v0.0.0"`
+var version = ""
 
 func main() {
 	// create context and listen interruptions
@@ -35,8 +36,19 @@ func main() {
 		signal.Stop(exit)
 	}()
 
+	// Obtain version
+	v := version
+	if v == "" {
+		if buildInfo, ok := debug.ReadBuildInfo(); ok {
+			v = buildInfo.Main.Version
+		}
+	}
+	if v == "" {
+		v = "dev"
+	}
+
 	// Parse configuration from command line and config file
-	configs, verbose, err := flags.Parse(Version)
+	configs, verbose, err := flags.Parse(v)
 	if err != nil {
 		logger.Info(err.Error())
 		return

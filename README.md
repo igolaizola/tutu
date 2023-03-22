@@ -9,7 +9,7 @@
 Installation using go:
 
 ```
-go get github.com/igolaizola/tutu/cmd/tutu
+go install github.com/igolaizola/tutu/cmd/tutu@latest
 ```
 
 ## Usage
@@ -50,4 +50,3 @@ remote localhost:5050
 ```
 tutu -config myconf.conf
 ```
-
